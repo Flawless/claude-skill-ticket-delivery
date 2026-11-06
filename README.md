@@ -1,10 +1,12 @@
 # ticket-delivery
 
 A [Claude Code](https://claude.com/claude-code) skill that takes a ready ticket to a reviewed PR with a
-multi-agent Workflow: a design specification and an independently written test plan, an implement↔review
-loop inside a test loop, CI and stand tests (functional, performance, operational), quality requirements
-derived when the ticket has none, database plan evidence, and a traceability matrix for the PR. Agents hand each other documents as JSON Schemas adapted from ISO/IEC/IEEE 29119-3,
-29148, ISO/IEC 25010/25023 and IEEE 1016/1028 ([references](references.md)).
+multi-agent Workflow: a requirements specification first (acceptance criteria restated, quality requirements
+derived when the ticket has none), then a design specification and an independently written test plan and test
+cases, an implement↔review loop inside a test loop, CI and stand tests (functional, performance, operational),
+database plan evidence, and a traceability matrix for the PR. Agents hand each other documents as JSON Schemas
+adapted from ISO/IEC/IEEE 29148, 29119-3, ISO/IEC 25010/25030/25023 and IEEE 1016/1028
+([references](references.md)).
 
 Status: draft, shared for review. Used once end to end on a real ticket; the current document structure
 has only been dry-run with stub agents.

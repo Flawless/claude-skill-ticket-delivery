@@ -1,0 +1,38 @@
+{
+  "title": "Test case specification",
+  "description": "The test cases. Every case traces to one requirement in the requirements specification.",
+  "type": "object",
+  "required": ["test_cases"],
+  "properties": {
+    "test_cases": {
+      "type": "array",
+      "minItems": 1,
+      "description": "At least one per requirement, plus negative cases (missing, deleted, malformed input).",
+      "items": {
+        "type": "object",
+        "required": ["id", "requirement_id", "title", "level", "runs_on", "preconditions", "steps", "expected"],
+        "properties": {
+          "id": { "type": "string", "description": "TC-<requirement id>-<n>, e.g. TC-AC2-1, TC-NFR1-1. Unique." },
+          "requirement_id": { "type": "string", "description": "The requirement this case proves." },
+          "title": { "type": "string" },
+          "level": { "type": "string", "enum": ["unit", "integration", "system", "performance", "operational"], "description": "operational: logs, metrics, traces, alerts and dashboards the change must produce." },
+          "runs_on": { "type": "string", "enum": ["local", "stand", "production"], "description": "local: an automated test in the build record. stand: run by the stand tester, recorded in the test report. production: a check handed to the user." },
+          "negative": { "type": "boolean", "description": "True for missing, deleted or malformed input cases." },
+          "preconditions": { "type": "string", "description": "Data and state required. On the stand: records to seed through the real pipeline, or existing ones to reuse." },
+          "steps": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "One action each." },
+          "expected": { "type": "string", "description": "The exact observable result. For quality requirements: the metric against its threshold." }
+        }
+      }
+    },
+    "incidental": { "type": "array", "items": { "type": "string" } }
+  },
+  "examples": [{
+    "test_cases": [
+      { "id": "TC-AC2-1", "requirement_id": "AC2", "title": "History lists every saved version newest first", "level": "integration", "runs_on": "local", "preconditions": "an order with 3 saved versions", "steps": ["request the order's history"], "expected": "3 versions, newest first" },
+      { "id": "TC-AC2-2", "requirement_id": "AC2", "title": "History page shows the version used for shipping", "level": "system", "runs_on": "stand", "preconditions": "seeded order O-1 with 3 versions, shipped after version 1", "steps": ["open /orders/O-1/history"], "expected": "Saved versions (3), oldest marked SHIPPED" },
+      { "id": "TC-AC2-3", "requirement_id": "AC2", "title": "Unknown order", "level": "system", "runs_on": "stand", "negative": true, "preconditions": "none", "steps": ["open /orders/NOPE/history"], "expected": "Order not found" },
+      { "id": "TC-NFR1-1", "requirement_id": "NFR1", "title": "History read is bounded", "level": "performance", "runs_on": "stand", "preconditions": "an order with 2000 versions", "steps": ["EXPLAIN (ANALYZE, BUFFERS) the history query for it"], "expected": "at most 501 history rows read, through the history primary key" },
+      { "id": "TC-NFR2-1", "requirement_id": "NFR2", "title": "Failure is traceable in logs", "level": "operational", "runs_on": "stand", "preconditions": "none", "steps": ["request history for a malformed order id", "search the stand's logs for the request's trace id"], "expected": "one error event carrying the order id and trace id" }
+    ]
+  }]
+}

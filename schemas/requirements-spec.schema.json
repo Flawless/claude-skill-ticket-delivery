@@ -1,0 +1,63 @@
+{
+  "title": "Requirements specification",
+  "description": "Written first, from the ticket, the profile's baseline and the current behaviour. Design and testing both work from it. Every later document refers to its ids.",
+  "type": "object",
+  "required": ["functional", "quality", "open_questions"],
+  "properties": {
+    "functional": {
+      "type": "array",
+      "description": "Exactly one entry per acceptance criterion id given in the ticket.",
+      "items": {
+        "type": "object",
+        "required": ["id", "statement"],
+        "properties": {
+          "id": { "type": "string", "description": "The acceptance criterion id as given, e.g. AC1." },
+          "statement": { "type": "string", "description": "The criterion restated so that it is testable: observable behaviour, inputs, expected result." },
+          "verified_behaviour": { "type": "string", "description": "What the code or data shows today, where the ticket claims something about current behaviour." }
+        }
+      }
+    },
+    "quality": {
+      "type": "array",
+      "description": "Non-functional requirements: those stated in the ticket, the profile baseline items that apply, and any you derive by walking the ISO/IEC 25010 product quality characteristics (e.g. performance efficiency, reliability, security, maintainability) against the change. Empty only if none apply.",
+      "items": {
+        "type": "object",
+        "required": ["id", "source", "characteristic", "statement", "metric", "threshold", "unit", "valid_on", "needs_design"],
+        "properties": {
+          "id": { "type": "string", "description": "NFR<n>, or the profile's own id for baseline items. Must not clash with criterion ids." },
+          "source": { "type": "string", "enum": ["ticket", "profile", "derived"], "description": "derived: proposed by you. Failures of derived requirements are reported to the user, not sent back to the implementer." },
+          "characteristic": { "type": "string", "description": "ISO/IEC 25010 characteristic and sub-characteristic, e.g. 'performance efficiency / time behaviour'." },
+          "statement": { "type": "string", "description": "The requirement in one sentence." },
+          "metric": { "type": "string", "description": "What is measured, e.g. 'rows read per call', 'error log event with trace id'." },
+          "threshold": { "type": "number", "description": "The limit. For yes/no checks use 1 for 'must hold'." },
+          "op": { "type": "string", "enum": ["<=", ">=", "=="], "description": "How the measured value compares to the threshold to pass. Default <=." },
+          "unit": { "type": "string" },
+          "valid_on": { "type": "string", "enum": ["local", "stand", "production"], "description": "The smallest environment where a measurement proves it. Timings at production size and real load prove only on production." },
+          "needs_design": { "type": "boolean", "description": "True if meeting it requires a design decision (an index, a limit, a log event); the design spec must then answer it." }
+        }
+      }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["question", "blocking"],
+        "properties": {
+          "question": { "type": "string" },
+          "blocking": { "type": "boolean", "description": "True if the answer changes scope. Blocking questions stop the run until the user answers." }
+        }
+      }
+    },
+    "incidental": { "type": "array", "items": { "type": "string" } }
+  },
+  "examples": [{
+    "functional": [{ "id": "AC2", "statement": "The order history page lists every saved version of an order, newest first, and marks the version in effect when it shipped." }],
+    "quality": [
+      { "id": "NFR1", "source": "profile", "characteristic": "performance efficiency / resource utilisation", "statement": "Order history reads only the versions it returns, at any history length.", "metric": "history rows read per call for an order with 2000 versions", "threshold": 501, "op": "<=", "unit": "rows", "valid_on": "stand", "needs_design": true },
+      { "id": "NFR2", "source": "derived", "characteristic": "maintainability / analysability", "statement": "A failed history request is logged with the order id and trace id.", "metric": "error log events with order id and trace id", "threshold": 1, "op": ">=", "unit": "events", "valid_on": "stand", "needs_design": true }
+    ],
+    "assumptions": ["history versions are append-only"],
+    "open_questions": []
+  }]
+}

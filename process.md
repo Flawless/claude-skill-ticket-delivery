@@ -11,8 +11,8 @@ A rule's reason follows it in italics where it is not obvious.
   first explanations get disproved by data.*
 - Before calling two records duplicates, find what links them. *A "duplicate" is often one entity at two stages.*
 - Give every criterion a stable id (`AC1`…); every document refers to it.
-- Quality requirements rarely come with the ticket. The test designer collects them in §3 from the ticket, the
-  profile's baseline and the change itself; the user does not need to supply them up front.
+- Quality requirements rarely come with the ticket. The requirements analyst collects them in §3 from the
+  ticket, the profile's baseline and the change itself; the user does not need to supply them up front.
 - Move the ticket to "in progress" (profile). Assign it if asked.
 - Exit: every criterion is testable as written. If one is not, ask before building.
 
@@ -22,25 +22,35 @@ A rule's reason follows it in italics where it is not obvious.
 - Do the profile's worktree setup. `.tmp/run/` must be git-ignored; the run writes there.
 - Exit: dependencies resolve; `git status` is clean.
 
-## 3. Design specification and test plan
+## 3. Requirements specification
 
-Two agents in parallel.
+The requirements analyst writes it first (`schemas/requirements-spec.schema.json`); design and testing both
+work from it.
 
-- The designer writes the design specification (`schemas/design-spec.schema.json`), including the logs,
-  metrics, traces, alerts and dashboards that make the change diagnosable.
-- The test designer writes the test plan (`schemas/test-plan.schema.json`) from the criteria, the profile's
-  baseline and the current behaviour only, without the design. *Tests written by whoever designed the solution
+- Every acceptance criterion restated so it is testable, with claims about current behaviour checked.
+- The quality requirements: the ticket's, the baseline items that apply, and ones derived from the ISO/IEC 25010
+  characteristics for this change, each with a metric, a threshold, the smallest environment that proves it,
+  and whether it needs a design decision. *Derived thresholds are an agent's guess*: their failures go to the
+  user, never back to the implementer. With `confirmDerived`, the run stops here for the user to accept them.
+- Exit, checked by the script: every criterion present once, unique ids. Blocking open questions stop the run.
+
+## 4. Design specification, test plan and test cases
+
+Two agents in parallel, both from the requirements specification.
+
+- The designer writes the design specification (`schemas/design-spec.schema.json`): an entry per criterion and
+  per quality requirement that needs design, an index per query, and the logs, metrics, traces, alerts and
+  dashboards that make the change diagnosable.
+- The test designer writes the test plan (`schemas/test-plan.schema.json`: scope, approach, environments and
+  their limits, entry and exit criteria, risks) and the test case specification
+  (`schemas/test-case-spec.schema.json`), without the design. *Tests written by whoever designed the solution
   test that solution, not the requirement.*
-- The test plan lists the quality requirements for this change: the ticket's, the baseline items that apply,
-  and ones derived from the ISO/IEC 25010 characteristics, each with a metric, a threshold and the smallest
-  environment that proves it. Derived ones are proposals: their failures go to the user, never back to the
-  implementer.
-- Exit, checked by the script: an entry per criterion and an index per query in the design; a test case per
-  requirement and unique ids in the plan. Blocking open questions stop the run for the user.
+- Exit, checked by the script: every criterion and every quality requirement that needs design has a design
+  entry; every requirement has a test case; ids are unique. Blocking open questions stop the run.
 
-## 4. Test loop (3 rounds at most)
+## 5. Test loop (3 rounds at most)
 
-### 4a. Implement ↔ review (3 rounds at most)
+### 5a. Implement ↔ review (3 rounds at most)
 
 - The implementer commits, implements every test case that runs locally as an automated test, answers
   every open finding id (fixed, disputed, or deferred for minors only), then runs the profile's gate commands
@@ -48,7 +58,7 @@ Two agents in parallel.
   (`schemas/build-record.schema.json`). Missing answers are asked for once more.
 - The script checks the build record: every local test case has a test, the gate ran on the head
   commit, every exit code 0. A failure goes straight back to the implementer, without review. The record is a
-  claim; CI in 4b is the independent check.
+  claim; CI in 5b is the independent check.
 - Tests set every ordering value they assert on. *A fixture relying on sequence values passed on a long-lived
   local database and failed in CI on a fresh one.*
 - Two read-only reviewer lanes (backend correctness; criteria as a user sees them) verify the answers, then
@@ -60,9 +70,9 @@ Two agents in parallel.
 - Exit: gate green, no blocking finding open, both lanes returned and reviewed the head. Otherwise the next
   round starts without the stand.
 
-### 4b. CI and stand test
+### 5b. CI and stand test
 
-- Push and wait for CI on the head. Not green → a failure for 4a, with the failing job; no deploy.
+- Push and wait for CI on the head. Not green → a failure for 5a, with the failing job; no deploy.
 - Deploy, and confirm the stand reports that build. *A stand once still ran an older build; results from it
   test nothing.*
 - Seed through the real pipeline, reusing earlier seed. *Two clean reviews missed a parser bug the first real
@@ -76,12 +86,12 @@ Two agents in parallel.
 - Check where tools can read and write before planning evidence around them; move files out of the user's
   checkout at once. *Browser tools and tracker connectors are sandboxed to fixed directories.*
 - Exit: CI green, the build is the head, every stand case passed except those of derived quality requirements.
-  Failures go back to 4a. No access, no seed or deploy infrastructure down stops the run as blocked.
+  Failures go back to 5a. No access, no seed or deploy infrastructure down stops the run as blocked.
 
 Every agent prompt carries the full text of what to do or check; ids only cross-reference.
 *An agent told to check "B2–B6" without the list had to guess from commit messages.*
 
-## 5. Evidence
+## 6. Evidence
 
 - Label every number with its environment and that environment's size, read from both environments'
   catalogs (row counts, index lists). *A "production-scale" copy was 5% of production and had indexes
@@ -96,7 +106,7 @@ Every agent prompt carries the full text of what to do or check; ids only cross-
   with anything heavy. *A withdrawn query was run from scroll-back.*
 - Redact ids, tenants and timestamps before the first public post. *Edits keep history.*
 
-## 6. PR
+## 7. PR
 
 - If no stand round ran, push and wait for CI on the head; mark the PR ready only on green CI.
 - PR body per the user's rules: why, what, impact, verification commands, the `traceability` matrix, what
@@ -104,11 +114,12 @@ Every agent prompt carries the full text of what to do or check; ids only cross-
 - Evidence as a redacted PR comment. Draft while anything is pending; ready when asked.
 - Move the ticket to review.
 
-## 7. Close out
+## 8. Close out
 
 - Report residue on the stand and who deletes it when.
 - Delete temp tokens and credential files.
 - Run record (test completion report), when one is wanted: the returned `artifacts`, verdict and PR link,
   plus each agent's usage summed from its transcript (input, cache write, cache read, output) and priced with
-  prices dated in the record. *The script cannot measure usage: output-token counters are shared with everything else running.*
+  prices dated in the record. *The script cannot measure usage: output-token counters are shared with
+  everything else running.*
 - A new failure mode becomes a rule here, with its reason, or a check in `workflow.js`.

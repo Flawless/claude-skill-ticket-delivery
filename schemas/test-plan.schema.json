@@ -1,65 +1,24 @@
 {
   "title": "Test plan",
-  "description": "Written from the acceptance criteria, the profile's baseline quality requirements and the current behaviour only, without the design spec. Every test case traces to one requirement: an acceptance criterion or a quality requirement.",
+  "description": "How the requirements will be tested: scope, approach, environments, criteria to start and stop. Written from the requirements specification and the current behaviour, without the design spec. The test cases are in the test case specification.",
   "type": "object",
-  "required": ["quality_requirements", "test_cases", "entry_criteria", "exit_criteria"],
+  "required": ["scope", "approach", "environments", "entry_criteria", "exit_criteria", "risks"],
   "properties": {
-    "quality_requirements": {
-      "type": "array",
-      "description": "Non-functional requirements for this change: those stated in the ticket, the profile baseline items that apply, and any you derive by walking the ISO/IEC 25010 product quality characteristics (e.g. performance efficiency, reliability, security, maintainability) against the change. Empty only if none apply.",
-      "items": {
-        "type": "object",
-        "required": ["id", "source", "characteristic", "statement", "metric", "threshold", "unit", "valid_on"],
-        "properties": {
-          "id": { "type": "string", "description": "NFR<n>, e.g. NFR1, or the profile's own id for baseline items." },
-          "source": { "type": "string", "enum": ["ticket", "profile", "derived"], "description": "derived: proposed by you. Failures of derived requirements are reported to the user, not sent back to the implementer." },
-          "characteristic": { "type": "string", "description": "ISO/IEC 25010 characteristic and sub-characteristic, e.g. 'performance efficiency / time behaviour'." },
-          "statement": { "type": "string", "description": "The requirement in one sentence." },
-          "metric": { "type": "string", "description": "What is measured, e.g. 'p95 response time of get-order-history', 'buffers read per call', 'error log event emitted with trace id'." },
-          "threshold": { "type": "number", "description": "The limit. For yes/no checks use 1 for 'must hold'." },
-          "op": { "type": "string", "enum": ["<=", ">=", "=="], "description": "How the measured value compares to the threshold to pass. Default <=." },
-          "unit": { "type": "string", "description": "e.g. ms, buffers, rows, events." },
-          "valid_on": { "type": "string", "enum": ["local", "stand", "production"], "description": "The smallest environment where a measurement proves it. Plan shape proves on a stand; timings at production size and real load prove only on production, which the user checks." }
-        }
-      }
-    },
-    "test_cases": {
-      "type": "array",
-      "minItems": 1,
-      "description": "At least one per acceptance criterion and per quality requirement, plus negative cases (missing, deleted, malformed input).",
-      "items": {
-        "type": "object",
-        "required": ["id", "requirement_id", "title", "level", "runs_on", "preconditions", "steps", "expected"],
-        "properties": {
-          "id": { "type": "string", "description": "TC-<requirement id>-<n>, e.g. TC-AC2-1, TC-NFR1-1. Unique." },
-          "requirement_id": { "type": "string", "description": "The acceptance criterion or quality requirement this case proves." },
-          "title": { "type": "string" },
-          "level": { "type": "string", "enum": ["unit", "integration", "system", "performance", "operational"], "description": "operational: logs, metrics, traces, alerts and dashboards the change must produce." },
-          "runs_on": { "type": "string", "enum": ["local", "stand", "production"], "description": "local: an automated test in the build record. stand: run by the system tester and recorded in the test report. production: a check handed to the user." },
-          "negative": { "type": "boolean", "description": "True for missing, deleted or malformed input cases." },
-          "preconditions": { "type": "string", "description": "Data and state required. On the stand: records to seed through the real pipeline, or existing ones to reuse." },
-          "steps": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "One action each." },
-          "expected": { "type": "string", "description": "The exact observable result. For quality requirements: the metric against its threshold." }
-        }
-      }
-    },
+    "scope": { "type": "array", "items": { "type": "string" }, "description": "Requirement ids in scope, and the features or components under test." },
+    "out_of_scope": { "type": "array", "items": { "type": "string" }, "description": "What is deliberately not tested, and why." },
+    "approach": { "type": "array", "items": { "type": "string" }, "description": "Which levels are used for what, e.g. 'integration tests for query results', 'stand for UI and plan shape', 'production checks by the user for load'." },
+    "environments": { "type": "array", "items": { "type": "string" }, "description": "Each environment and its limits, e.g. 'stand: small data, proves plan shape not timings'." },
     "entry_criteria": { "type": "array", "items": { "type": "string" }, "description": "What must hold before stand testing starts, e.g. 'CI green on the head'." },
     "exit_criteria": { "type": "array", "items": { "type": "string" }, "description": "What must hold to call testing done." },
-    "out_of_scope": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" }, "description": "What could make the results misleading, and how the plan handles it." },
     "incidental": { "type": "array", "items": { "type": "string" } }
   },
   "examples": [{
-    "quality_requirements": [
-      { "id": "NFR1", "source": "profile", "characteristic": "performance efficiency / resource utilisation", "statement": "Order history reads only the versions it returns, at any history length.", "metric": "history rows read per call for an order with 2000 versions", "threshold": 501, "op": "<=", "unit": "rows", "valid_on": "stand" },
-      { "id": "NFR2", "source": "derived", "characteristic": "maintainability / analysability", "statement": "A failed history request is logged with the order id and trace id.", "metric": "error log event with order id and trace id", "threshold": 1, "op": ">=", "unit": "events", "valid_on": "stand" }
-    ],
-    "test_cases": [
-      { "id": "TC-AC2-1", "requirement_id": "AC2", "title": "History lists every saved version newest first", "level": "integration", "runs_on": "local", "preconditions": "an order with 3 saved versions", "steps": ["request the order's history"], "expected": "3 versions, newest first" },
-      { "id": "TC-AC2-2", "requirement_id": "AC2", "title": "History page shows the version used for shipping", "level": "system", "runs_on": "stand", "preconditions": "seeded order O-1 with 3 versions, shipped after version 1", "steps": ["open /orders/O-1/history"], "expected": "Saved versions (3), oldest marked SHIPPED" },
-      { "id": "TC-NFR1-1", "requirement_id": "NFR1", "title": "History read is bounded", "level": "performance", "runs_on": "stand", "preconditions": "an order with 2000 versions", "steps": ["EXPLAIN (ANALYZE, BUFFERS) the history query for it"], "expected": "at most 501 history rows read, through the history primary key" },
-      { "id": "TC-NFR2-1", "requirement_id": "NFR2", "title": "Failure is traceable in logs", "level": "operational", "runs_on": "stand", "preconditions": "none", "steps": ["request history for a malformed order id", "search the stand's logs for the request's trace id"], "expected": "one error event carrying the order id and trace id" }
-    ],
+    "scope": ["AC2", "NFR1", "NFR2"],
+    "approach": ["integration tests for history ordering", "stand: history page in a browser, plan shape for NFR1, log search for NFR2"],
+    "environments": ["local test database", "stand: small history tables; proves plan shape and logging, not timings"],
     "entry_criteria": ["CI green on the head", "stand reports the head build"],
-    "exit_criteria": ["every stand case from ticket and profile requirements passes", "no blocking finding open"]
+    "exit_criteria": ["every stand case of ticket and profile requirements passes", "no blocking finding open"],
+    "risks": ["stand data too small for timings: timings are production checks"]
   }]
 }

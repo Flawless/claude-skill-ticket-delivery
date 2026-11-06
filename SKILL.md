@@ -1,6 +1,6 @@
 ---
 name: ticket-delivery
-description: Take a ready ticket to a reviewed PR with a multi-agent Workflow — design spec and an independent test plan, an implement↔review loop inside a test loop (the implementer runs the gate; CI and system tests on a shared stand prove it), DB plan evidence, PR, tracker moves. Not for one-file fixes or pure investigations.
+description: Take a ready ticket to a reviewed PR with a multi-agent Workflow — requirements spec (functional and quality), design spec and an independent test plan, an implement↔review loop inside a test loop (the implementer runs the gate; CI and system tests on a shared stand prove it), DB plan evidence, PR, tracker moves. Not for one-file fixes or pure investigations.
 ---
 
 # Ticket delivery
@@ -18,11 +18,13 @@ a claim of conformance; editions, status and links are in [references.md](refere
 
 | Document | Written by | Adapted from |
 |---|---|---|
-| Design specification | designer | IEEE 1016-2009, software design descriptions (inactive since 2020) |
-| Test plan, with quality requirements and test case specifications | test designer, without the design | ISO/IEC/IEEE 29119-3:2021; quality characteristics from ISO/IEC 25010:2023 |
+| Requirements specification (functional + quality) | requirements analyst, first | ISO/IEC/IEEE 29148:2018; quality requirements per ISO/IEC 25030:2019, characteristics from ISO/IEC 25010:2023 |
+| Design specification | designer, from the requirements | IEEE 1016-2009, software design descriptions (inactive since 2020) |
+| Test plan | test designer, from the requirements, without the design | ISO/IEC/IEEE 29119-3:2021, test documentation |
+| Test case specification | test designer, same call | ISO/IEC/IEEE 29119-3:2021 |
 | Build record (commits, automated tests, gate) | implementer | ISO/IEC/IEEE 29119-3:2021 (test log, for the gate) |
 | Review report | each reviewer lane | IEEE 1028-2008, software reviews and audits (inactive since 2019) |
-| Test report | system tester | ISO/IEC/IEEE 29119-3:2021 (test execution log, test status report) |
+| Test report | stand tester | ISO/IEC/IEEE 29119-3:2021 (test execution log, test status report) |
 | Traceability matrix | the script, rendered | ISO/IEC/IEEE 29148:2018, requirements traceability |
 | Run record | orchestrator, at close out | ISO/IEC/IEEE 29119-3:2021 (test completion report) |
 
@@ -32,13 +34,16 @@ Load `agent-workflow-design` and `workflow-authoring` first.
 
 Intake and branch (process §1–2) happen before the run. Then run `workflow.js` by `scriptPath`, with a new
 `run_id` and every `schemas/*.schema.json` parsed into `args.schemas`, keyed by file name without
-`.schema.json`. Evidence, PR and close out (§5–7) work from its return:
+`.schema.json`. Evidence, PR and close out (§6–8) work from its return:
 
-- `{stop}` → ask the user the blocking questions, put the answers in `facts`, run again.
+- `{stop}` with `questions` → ask the user, put the answers in `facts`, run again.
+- `{stop}` with `derived` (only with `confirmDerived: true`) → show the user the quality requirements the
+  analyst proposed. Accepted ones get `source: "ticket"`, rejected ones are removed; run again with the edited
+  spec in `args.requirements`, which skips the analyst.
 - `verdict`, `traceability`, `rounds`, `residue` → the report and the PR body.
 - `open_findings` → re-grade each minor that scans, leaks across tenants or breaks a project rule; any upgrade
   goes back in as `facts` for another run. Name a follow-up for every finding left in the PR.
-- `derived_failures` → quality requirements the test designer proposed that the change misses; the user
+- `derived_failures` → quality requirements the analyst derived that the change misses; the user
   accepts them (a follow-up, or a baseline item for next time) or drops them.
 - `production_checks` → cases only production can prove; hand them to the user with the evidence batch.
 - `incidental` → relay to the user.
@@ -51,7 +56,8 @@ Intake and branch (process §1–2) happen before the run. Then run `workflow.js
 - Branch from a fresh fetch of the default branch, in its own worktree. Never touch the user's checkout.
 - One writer at a time; reviewers are read-only, run in parallel, and never a cheaper tier than the writer.
 - A clean review is not a pass. Only the system tests on the stand prove the acceptance criteria.
-- Shared-stand deploys need the user's explicit go for this task. Production is read-only; the user runs anything there.
+- Shared-stand deploys need the user's explicit go for this task. Production is read-only; the user runs
+  anything there.
 - Outward actions (PR, ticket moves, comments, attachments) only on request; show new text first.
 - No secrets in args, logs or prompts; no customer data in public places (PRs, chat channels).
 

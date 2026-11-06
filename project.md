@@ -25,8 +25,9 @@ Exact lint, type check, format, drift and test commands. How to focus backend te
 
 ## Stand
 
-Stand URL(s), where its logs, metrics and traces can be queried, how a branch gets there (CI image, deploy command, how long each takes), how the running
-build reports its commit, who must approve a deploy. Where access details are documented.
+Stand URL(s), where its logs, metrics and traces can be queried, how a branch gets there (CI image, deploy
+command, how long each takes), how the running build reports its commit, who must approve a deploy. Where
+access details are documented.
 
 ## Baseline quality requirements
 

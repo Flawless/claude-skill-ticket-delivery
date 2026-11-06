@@ -1,24 +1,24 @@
 {
   "title": "Design specification",
-  "description": "How the change is built, per acceptance criterion. Testing is in the test plan, written separately.",
+  "description": "How the change is built, answering the requirements specification. Written in parallel with the test plan, which it does not see.",
   "type": "object",
-  "required": ["criteria", "observability", "open_questions"],
+  "required": ["requirements", "observability", "open_questions"],
   "properties": {
-    "criteria": {
+    "requirements": {
       "type": "array",
-      "description": "Exactly one entry per acceptance criterion id.",
+      "description": "One entry per acceptance criterion, and per quality requirement marked needs_design.",
       "items": {
         "type": "object",
         "required": ["id", "changes", "queries"],
         "properties": {
           "id": {
             "type": "string",
-            "description": "Acceptance criterion id as given, e.g. AC1."
+            "description": "Requirement id from the requirements specification, e.g. AC2 or NFR1."
           },
           "changes": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "What changes in backend, API and UI. If this departs from a solution proposed in the ticket, say why."
+            "description": "What changes in backend, API and UI to meet it. If this departs from a solution proposed in the ticket, say why."
           },
           "queries": {
             "type": "array",
@@ -93,7 +93,7 @@
   },
   "examples": [
     {
-      "criteria": [
+      "requirements": [
         {
           "id": "AC2",
           "changes": ["New endpoint get-order-history returning saved versions newest first", "New page /orders/$id/history"],
@@ -104,6 +104,11 @@
               "index": "history primary key (id, version), read backwards, stops at 501 rows"
             }
           ]
+        },
+        {
+          "id": "NFR1",
+          "changes": ["history query reads newest-first with LIMIT 501"],
+          "queries": []
         }
       ],
       "observability": [
