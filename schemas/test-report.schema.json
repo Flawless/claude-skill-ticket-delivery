@@ -1,48 +1,122 @@
 {
   "title": "Test report",
-  "description": "Execution of the test plan's system cases on a deployed build. Valid only if the stand runs the head under test.",
+  "description": "Execution of the test plan's stand cases on a deployed build. Valid only if the stand runs the head under test.",
   "type": "object",
   "required": ["sha", "ci", "build_version", "results", "residue"],
   "properties": {
-    "sha": { "type": "string", "description": "The commit CI built and the stand was deployed from." },
+    "sha": {
+      "type": "string",
+      "description": "The commit CI built and the stand was deployed from."
+    },
     "ci": {
       "type": "object",
-      "description": "CI on sha. If it is not green, stop: no deploy, no system cases.",
+      "description": "CI on sha. If it is not green, stop: no deploy, no stand cases.",
       "required": ["run_url", "conclusion"],
       "properties": {
         "run_url": { "type": "string" },
-        "conclusion": { "type": "string", "enum": ["success", "failure", "cancelled", "timed_out"] },
-        "failure": { "type": "string", "description": "Failing job and the tail of its output, when not success." }
+        "conclusion": {
+          "type": "string",
+          "enum": ["success", "failure", "cancelled", "timed_out"]
+        },
+        "failure": {
+          "type": "string",
+          "description": "Failing job and the tail of its output, when not success."
+        }
       }
     },
-    "build_version": { "type": "string", "description": "What the stand reports about its running build, e.g. the health endpoint's version. Must contain the first 7 characters of sha. Empty if CI was not green." },
+    "build_version": {
+      "type": "string",
+      "description": "What the stand reports about its running build, e.g. the health endpoint's version. Must contain the first 7 characters of sha. Empty if CI was not green."
+    },
     "results": {
       "type": "array",
-      "description": "One entry per system test case in the test plan. Empty if CI was not green.",
+      "description": "One entry per test case with runs_on stand. Empty if CI was not green.",
       "items": {
         "type": "object",
         "required": ["test_case_id", "verdict", "expected", "actual"],
         "properties": {
           "test_case_id": { "type": "string" },
-          "verdict": { "type": "string", "enum": ["pass", "fail", "not_run"] },
-          "expected": { "type": "string", "description": "The test case's expected result." },
-          "actual": { "type": "string", "description": "What the page showed, read from the DOM." },
-          "evidence": { "type": "string", "description": "Screenshot path, plus a redacted EXPLAIN summary for the criterion's queries." }
+          "verdict": {
+            "type": "string",
+            "enum": ["pass", "fail", "not_run"]
+          },
+          "expected": {
+            "type": "string",
+            "description": "The test case's expected result."
+          },
+          "actual": {
+            "type": "string",
+            "description": "What was observed: read from the DOM, the plan, or the stand's logs, metrics or traces."
+          },
+          "measurement": {
+            "type": "object",
+            "description": "Required for every case that traces to a quality requirement; the script compares value to the requirement's threshold.",
+            "required": ["value", "unit", "environment"],
+            "properties": {
+              "value": { "type": "number" },
+              "unit": { "type": "string" },
+              "environment": {
+                "type": "string",
+                "description": "Where measured, with its size for the tables involved, e.g. 'QA stand, history 23k rows'."
+              }
+            }
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Screenshot path, redacted plan summary, or the log or metric query used."
+          }
         }
       }
     },
-    "residue": { "type": "array", "items": { "type": "string" }, "description": "Every record this round created on the stand." },
-    "blocked": { "type": "string", "description": "Set only when the round could not run: no access, cannot seed, deploy infrastructure down. Stops the loop. CI failing on the code is not a blocker; it goes in ci." },
-    "incidental": { "type": "array", "items": { "type": "string" } }
+    "residue": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Every record this round created on the stand."
+    },
+    "blocked": {
+      "type": "string",
+      "description": "Set only when the round could not run: no access, cannot seed, deploy infrastructure down. Stops the loop. CI failing on the code is not a blocker; it goes in ci."
+    },
+    "incidental": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
   },
-  "examples": [{
-    "sha": "9f3c2a17b4e8d6051c2f7a9e3b1d4c6a8e0f2b57",
-    "ci": { "run_url": "https://ci.example/runs/123", "conclusion": "success" },
-    "build_version": "ci-9f3c2a17",
-    "results": [
-      { "test_case_id": "TC-AC2-2", "verdict": "pass", "expected": "Saved versions (3), oldest marked SHIPPED", "actual": "Saved versions (3); version 1 tagged SHIPPED", "evidence": ".tmp/run/stand-1/TC-AC2-2.png; order-versions: backward index scan, 0.8 ms, 1.2M history rows" },
-      { "test_case_id": "TC-AC2-3", "verdict": "pass", "expected": "Order not found", "actual": "Order not found" }
-    ],
-    "residue": ["order O-1"]
-  }]
+  "examples": [
+    {
+      "sha": "9f3c2a17b4e8d6051c2f7a9e3b1d4c6a8e0f2b57",
+      "ci": {
+        "run_url": "https://ci.example/runs/123",
+        "conclusion": "success"
+      },
+      "build_version": "ci-9f3c2a17",
+      "results": [
+        {
+          "test_case_id": "TC-AC2-2",
+          "verdict": "pass",
+          "expected": "Saved versions (3), oldest marked SHIPPED",
+          "actual": "Saved versions (3); version 1 tagged SHIPPED",
+          "evidence": ".tmp/run/stand-1/TC-AC2-2.png; order-versions: backward index scan, 0.8 ms, 1.2M history rows"
+        },
+        {
+          "test_case_id": "TC-AC2-3",
+          "verdict": "pass",
+          "expected": "Order not found",
+          "actual": "Order not found"
+        },
+        {
+          "test_case_id": "TC-NFR1-1",
+          "verdict": "pass",
+          "expected": "at most 501 history rows read",
+          "actual": "501 rows via history primary key, backward scan",
+          "measurement": {
+            "value": 501,
+            "unit": "rows",
+            "environment": "QA stand, history 1.2M rows"
+          }
+        }
+      ],
+      "residue": ["order O-1"]
+    }
+  ]
 }

@@ -19,7 +19,7 @@ a claim of conformance; editions, status and links are in [references.md](refere
 | Document | Written by | Adapted from |
 |---|---|---|
 | Design specification | designer | IEEE 1016-2009, software design descriptions (inactive since 2020) |
-| Test plan, with test case specifications | test designer, without the design | ISO/IEC/IEEE 29119-3:2021, test documentation |
+| Test plan, with quality requirements and test case specifications | test designer, without the design | ISO/IEC/IEEE 29119-3:2021; quality characteristics from ISO/IEC 25010:2023 |
 | Build record (commits, automated tests, gate) | implementer | ISO/IEC/IEEE 29119-3:2021 (test log, for the gate) |
 | Review report | each reviewer lane | IEEE 1028-2008, software reviews and audits (inactive since 2019) |
 | Test report | system tester | ISO/IEC/IEEE 29119-3:2021 (test execution log, test status report) |
@@ -38,6 +38,9 @@ Intake and branch (process §1–2) happen before the run. Then run `workflow.js
 - `verdict`, `traceability`, `rounds`, `residue` → the report and the PR body.
 - `open_findings` → re-grade each minor that scans, leaks across tenants or breaks a project rule; any upgrade
   goes back in as `facts` for another run. Name a follow-up for every finding left in the PR.
+- `derived_failures` → quality requirements the test designer proposed that the change misses; the user
+  accepts them (a follow-up, or a baseline item for next time) or drops them.
+- `production_checks` → cases only production can prove; hand them to the user with the evidence batch.
 - `incidental` → relay to the user.
 - `artifacts` → every document in an envelope (run, stage, round, model, commit); the input for the run record.
 

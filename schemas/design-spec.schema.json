@@ -2,7 +2,7 @@
   "title": "Design specification",
   "description": "How the change is built, per acceptance criterion. Testing is in the test plan, written separately.",
   "type": "object",
-  "required": ["criteria", "open_questions"],
+  "required": ["criteria", "observability", "open_questions"],
   "properties": {
     "criteria": {
       "type": "array",
@@ -11,8 +11,15 @@
         "type": "object",
         "required": ["id", "changes", "queries"],
         "properties": {
-          "id": { "type": "string", "description": "Acceptance criterion id as given, e.g. AC1." },
-          "changes": { "type": "array", "items": { "type": "string" }, "description": "What changes in backend, API and UI. If this departs from a solution proposed in the ticket, say why." },
+          "id": {
+            "type": "string",
+            "description": "Acceptance criterion id as given, e.g. AC1."
+          },
+          "changes": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "What changes in backend, API and UI. If this departs from a solution proposed in the ticket, say why."
+          },
           "queries": {
             "type": "array",
             "description": "Every new or changed database query. Empty if none.",
@@ -20,11 +27,47 @@
               "type": "object",
               "required": ["name", "sql", "index"],
               "properties": {
-                "name": { "type": "string", "description": "Function or query name in code." },
-                "sql": { "type": "string", "description": "The SQL shape as issued, parameters as placeholders." },
-                "index": { "type": "string", "description": "The index used at production size, and why the planner picks it. Never empty." }
+                "name": {
+                  "type": "string",
+                  "description": "Function or query name in code."
+                },
+                "sql": {
+                  "type": "string",
+                  "description": "The SQL shape as issued, parameters as placeholders."
+                },
+                "index": {
+                  "type": "string",
+                  "description": "The index used at production size, and why the planner picks it. Never empty."
+                }
               }
             }
+          }
+        }
+      }
+    },
+    "observability": {
+      "type": "array",
+      "description": "Logs, metrics, traces, alerts and dashboards this change adds or changes, so it can be diagnosed in production. Empty only if the change emits nothing new.",
+      "items": {
+        "type": "object",
+        "required": ["kind", "name", "purpose"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["log", "metric", "trace", "alert", "dashboard"]
+          },
+          "name": {
+            "type": "string",
+            "description": "Event, metric, span, alert or dashboard name as it will appear."
+          },
+          "purpose": {
+            "type": "string",
+            "description": "What question it answers when something goes wrong."
+          },
+          "fields": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Fields or tags it carries, e.g. trace id, tenant, record id."
           }
         }
       }
@@ -36,18 +79,42 @@
         "required": ["question", "blocking"],
         "properties": {
           "question": { "type": "string" },
-          "blocking": { "type": "boolean", "description": "True if the answer changes scope. Blocking questions stop the run until the user answers." }
+          "blocking": {
+            "type": "boolean",
+            "description": "True if the answer changes scope. Blocking questions stop the run until the user answers."
+          }
         }
       }
     },
-    "incidental": { "type": "array", "items": { "type": "string" } }
+    "incidental": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
   },
-  "examples": [{
-    "criteria": [{
-      "id": "AC2",
-      "changes": ["New endpoint get-order-history returning saved versions newest first", "New page /orders/$id/history"],
-      "queries": [{ "name": "order-versions", "sql": "current row UNION ALL (history WHERE id = ? ORDER BY version DESC LIMIT 501)", "index": "history primary key (id, version), read backwards, stops at 501 rows" }]
-    }],
-    "open_questions": []
-  }]
+  "examples": [
+    {
+      "criteria": [
+        {
+          "id": "AC2",
+          "changes": ["New endpoint get-order-history returning saved versions newest first", "New page /orders/$id/history"],
+          "queries": [
+            {
+              "name": "order-versions",
+              "sql": "current row UNION ALL (history WHERE id = ? ORDER BY version DESC LIMIT 501)",
+              "index": "history primary key (id, version), read backwards, stops at 501 rows"
+            }
+          ]
+        }
+      ],
+      "observability": [
+        {
+          "kind": "log",
+          "name": "orders.history/failed",
+          "purpose": "find why a history page failed for one order",
+          "fields": ["order_id", "trace_id"]
+        }
+      ],
+      "open_questions": []
+    }
+  ]
 }

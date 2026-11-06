@@ -25,8 +25,16 @@ Exact lint, type check, format, drift and test commands. How to focus backend te
 
 ## Stand
 
-Stand URL(s), how a branch gets there (CI image, deploy command, how long each takes), how the running
+Stand URL(s), where its logs, metrics and traces can be queried, how a branch gets there (CI image, deploy command, how long each takes), how the running
 build reports its commit, who must approve a deploy. Where access details are documented.
+
+## Baseline quality requirements
+
+Standing non-functional requirements every change is tested against where they apply, each with an id, the
+ISO/IEC 25010 characteristic, a metric, a threshold and the smallest environment that proves it. For example:
+no query reads more than N rows of a large table per call (plan shape, stand); every endpoint logs failures with
+trace context (stand logs); admin pages respond within N ms at production size (production, user-run). The test
+designer adds derived ones per change; these are the ones that block.
 
 ## Seeding
 
