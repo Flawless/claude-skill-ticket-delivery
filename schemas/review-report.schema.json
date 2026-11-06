@@ -1,0 +1,51 @@
+{
+  "title": "Review report",
+  "description": "One read-only reviewer lane: verdicts on earlier findings, then new findings. Finding ids are assigned by the script.",
+  "type": "object",
+  "required": ["reviewed_sha", "verifications", "findings"],
+  "properties": {
+    "reviewed_sha": { "type": "string", "description": "The commit whose diff was reviewed, as given in the prompt. A review of any other commit is discarded." },
+    "verifications": {
+      "type": "array",
+      "description": "One entry per implementer response in the prompt. A finding stays open until a reviewer marks it resolved or dispute_accepted and no reviewer marks it unresolved.",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "verdict", "evidence"],
+        "properties": {
+          "finding_id": { "type": "string" },
+          "verdict": { "type": "string", "enum": ["resolved", "unresolved", "dispute_accepted"] },
+          "evidence": { "type": "string", "description": "File and line, or the command run, that shows the verdict." }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "New problems in this round's diff.",
+      "items": {
+        "type": "object",
+        "required": ["criterion_id", "severity", "file", "issue", "evidence", "check"],
+        "properties": {
+          "criterion_id": { "type": "string", "description": "Acceptance criterion it affects, or empty string." },
+          "test_case_id": { "type": "string", "description": "Test case it affects, if any." },
+          "severity": { "type": "string", "enum": ["blocking", "minor"], "description": "blocking: wrong behaviour, a criterion or test case not met, a project rule broken, or cost that grows with table or history size. Everything else is minor." },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "issue": { "type": "string", "description": "What is wrong, in one or two sentences." },
+          "evidence": { "type": "string", "description": "Code quoted, input that breaks it, or the plan." },
+          "check": { "type": "string", "description": "How the next reviewer confirms it is fixed." }
+        }
+      }
+    },
+    "incidental": { "type": "array", "items": { "type": "string" }, "description": "Anything noticed outside this lane or this diff." }
+  },
+  "examples": [{
+    "reviewed_sha": "4b7e19c02d5a8f3e6c1b9a7d2e4f60813c5a9b2d",
+    "verifications": [],
+    "findings": [{
+      "criterion_id": "AC3", "severity": "blocking", "file": "src/orders/queries.py", "line": 312,
+      "issue": "version-at-time reads every saved version of each order before keeping one.",
+      "evidence": "DISTINCT ON over the UNION ALL; an order with 2000 versions reads all of them.",
+      "check": "EXPLAIN shows a backward index scan under LIMIT 1 per order."
+    }]
+  }]
+}

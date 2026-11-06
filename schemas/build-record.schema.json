@@ -1,0 +1,76 @@
+{
+  "title": "Build record",
+  "description": "Implementer output for one round: commits, the automated tests per test case, an answer to every open finding, and the gate run at the final commit.",
+  "type": "object",
+  "required": ["head_sha", "commits", "automated_tests", "responses", "gate"],
+  "properties": {
+    "head_sha": { "type": "string", "description": "git rev-parse HEAD after the last commit of this round." },
+    "commits": {
+      "type": "array",
+      "items": { "type": "object", "required": ["sha", "subject"], "properties": { "sha": { "type": "string" }, "subject": { "type": "string" } } }
+    },
+    "automated_tests": {
+      "type": "array",
+      "description": "One entry per unit or integration test case in the test plan.",
+      "items": {
+        "type": "object",
+        "required": ["test_case_id", "location"],
+        "properties": {
+          "test_case_id": { "type": "string", "description": "e.g. TC-AC2-1." },
+          "location": { "type": "string", "description": "Test file and test name that implements it." }
+        }
+      }
+    },
+    "responses": {
+      "type": "array",
+      "description": "Exactly one entry per open finding id given in the prompt.",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "status", "reason"],
+        "properties": {
+          "finding_id": { "type": "string", "description": "The id as given, e.g. r1.1-backend-2." },
+          "status": { "type": "string", "enum": ["fixed", "disputed", "deferred"], "description": "fixed: changed in a commit. disputed: the finding is wrong; reason says why. deferred: minor and out of scope; reason names where it goes. A deferred blocking finding stays blocking." },
+          "commit": { "type": "string", "description": "Commit that fixes it, when status is fixed." },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "description": "The profile's gate commands plus the tests touched by the branch, run at head_sha. Fix and rerun before answering if any check fails.",
+      "required": ["sha", "checks"],
+      "properties": {
+        "sha": { "type": "string", "description": "git rev-parse HEAD when the checks ran. Must equal head_sha." },
+        "environment": { "type": "string", "description": "Where the checks ran, e.g. 'local, long-lived test database'." },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["command", "exit_code", "summary", "log_path"],
+            "properties": {
+              "command": { "type": "string", "description": "Exact command line." },
+              "exit_code": { "type": "integer", "description": "A check that could not run reports a non-zero code." },
+              "summary": { "type": "string", "description": "One line, e.g. '46 tests, 0 failures'." },
+              "log_path": { "type": "string", "description": "Full output, under the directory given in the prompt." }
+            }
+          }
+        }
+      }
+    },
+    "incidental": { "type": "array", "items": { "type": "string" } }
+  },
+  "examples": [{
+    "head_sha": "9f3c2a17b4e8d6051c2f7a9e3b1d4c6a8e0f2b57",
+    "commits": [{ "sha": "9f3c2a17", "subject": "feat(orders): order history endpoint" }],
+    "automated_tests": [{ "test_case_id": "TC-AC2-1", "location": "tests/orders/test_history.py::test_newest_first" }],
+    "responses": [{ "finding_id": "r1.1-backend-1", "status": "fixed", "commit": "9f3c2a17", "reason": "fixture now sets the ordering value it asserts on" }],
+    "gate": {
+      "sha": "9f3c2a17b4e8d6051c2f7a9e3b1d4c6a8e0f2b57",
+      "environment": "local, long-lived test database",
+      "checks": [
+        { "command": "make lint", "exit_code": 0, "summary": "0 errors", "log_path": ".tmp/run/r1.2/lint.log" },
+        { "command": "pytest tests/orders", "exit_code": 0, "summary": "38 passed", "log_path": ".tmp/run/r1.2/tests.log" }
+      ]
+    }
+  }]
+}

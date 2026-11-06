@@ -1,0 +1,42 @@
+{
+  "title": "Test plan",
+  "description": "Written from the acceptance criteria and current behaviour only, without the design spec. Every test case traces to one criterion; the build record and test report refer to test case ids.",
+  "type": "object",
+  "required": ["test_cases", "environments", "entry_criteria", "exit_criteria"],
+  "properties": {
+    "test_cases": {
+      "type": "array",
+      "minItems": 1,
+      "description": "At least one per acceptance criterion, plus negative cases (missing, deleted, malformed input).",
+      "items": {
+        "type": "object",
+        "required": ["id", "criterion_id", "title", "level", "preconditions", "steps", "expected"],
+        "properties": {
+          "id": { "type": "string", "description": "TC-<criterion id>-<n>, e.g. TC-AC2-1. Unique." },
+          "criterion_id": { "type": "string", "description": "The acceptance criterion this case proves." },
+          "title": { "type": "string" },
+          "level": { "type": "string", "enum": ["unit", "integration", "system"], "description": "unit and integration cases become automated tests in the build record; system cases run on the deployed stand and land in the test report." },
+          "negative": { "type": "boolean", "description": "True for missing, deleted or malformed input cases." },
+          "preconditions": { "type": "string", "description": "Data and state required. For system cases: records to seed through the real pipeline, or existing ones to reuse." },
+          "steps": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "One action each." },
+          "expected": { "type": "string", "description": "The exact observable result: a value, a state, an error message." }
+        }
+      }
+    },
+    "environments": { "type": "array", "items": { "type": "string" }, "description": "Where each level runs, e.g. 'unit, integration: local test database'; 'system: shared stand'." },
+    "entry_criteria": { "type": "array", "items": { "type": "string" }, "description": "What must hold before system testing starts, e.g. 'CI green on the head'." },
+    "exit_criteria": { "type": "array", "items": { "type": "string" }, "description": "What must hold to call testing done, e.g. 'every system case passes'." },
+    "out_of_scope": { "type": "array", "items": { "type": "string" } },
+    "incidental": { "type": "array", "items": { "type": "string" } }
+  },
+  "examples": [{
+    "test_cases": [
+      { "id": "TC-AC2-1", "criterion_id": "AC2", "title": "History lists every saved version newest first", "level": "integration", "preconditions": "an order with 3 saved versions", "steps": ["request the order's history"], "expected": "3 versions, newest first" },
+      { "id": "TC-AC2-2", "criterion_id": "AC2", "title": "History page shows the version used for shipping", "level": "system", "preconditions": "seeded order O-1 with 3 versions, shipped after version 1", "steps": ["open /orders/O-1/history"], "expected": "Saved versions (3), oldest marked SHIPPED" },
+      { "id": "TC-AC2-3", "criterion_id": "AC2", "title": "Unknown order", "level": "system", "negative": true, "preconditions": "none", "steps": ["open /orders/NOPE/history"], "expected": "Order not found" }
+    ],
+    "environments": ["unit, integration: local test database", "system: shared stand"],
+    "entry_criteria": ["CI green on the head", "stand reports the head build"],
+    "exit_criteria": ["every system case passes", "no blocking finding open"]
+  }]
+}
